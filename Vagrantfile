@@ -55,6 +55,11 @@ Vagrant.configure(2) do |config|
     end
   end
 
+  config.vm.define "etcd" do |node|
+    node.vm.hostname = "etcd"
+    node.vm.network "private_network", ip: "192.168.33.14"
+  end
+
   config.vm.provision :shell, inline: <<-SHELL
   	echo 'appending SSH Pub Key to ~/ubuntu/.ssh/authorized_keys'
   	echo '#{ssh_key}' >> /home/ubuntu/.ssh/authorized_keys

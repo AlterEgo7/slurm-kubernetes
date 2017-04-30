@@ -15,13 +15,18 @@
       raw: apt-get update && apt-get install python -y
       when: not p.rc == 0
 
+- name: Install etcd
+  hosts: etcd_nodes
+  roles:
+    - role: etcd
+
 - name: Install Docker
-  hosts: all
+  hosts: workers
   become: true
   roles:
     - role: docker
 
 - name: Install Kubernetes
-  hosts: all
+  hosts: workers
   roles:
     - role: kubernetes
