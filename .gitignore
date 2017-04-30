@@ -1,0 +1,4 @@
+*.log
+*.retry
+vagrant_shared_folder/
+.vagrant/
