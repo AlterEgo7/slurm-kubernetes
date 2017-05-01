@@ -1,4 +1,0 @@
----
-ansible_user: ubuntu
-
-etcd_network_iface: enp0s8

@@ -1,0 +1,3 @@
+[submodule "kubernetes-kargo"]
+	path = kubernetes-kargo
+	url = git@github.com:AlterEgo7/kargo.git

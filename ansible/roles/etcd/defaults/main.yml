@@ -1,4 +1,0 @@
----
-etcd_listen_peer_urls: http://0.0.0.0:2380,http://0.0.0.0:7001
-etcd_listen_client_urls: http://0.0.0.0:2379,http://0.0.0.0:4001
-etcd_advertise_client_urls: http://0.0.0.0:2379,http://0.0.0.0:4001
