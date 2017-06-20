@@ -1,0 +1,110 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# All Vagrant configuration is done below. The "2" in Vagrant.configure
+# configures the configuration version (we support older styles for
+# backwards compatibility). Please don't change it unless you know what
+# you're doing.
+Vagrant.configure("2") do |config|
+  # The most common configuration options are documented and commented below.
+  # For a complete reference, please see the online documentation at
+  # https://docs.vagrantup.com.
+
+  # Every Vagrant development environment requires a box. You can search for
+  # boxes at https://atlas.hashicorp.com/search.
+  config.vm.box = "ubuntu/xenial64"
+
+  # Disable automatic box update checking. If you disable this, then
+  # boxes will only be checked for updates when the user runs
+  # `vagrant box outdated`. This is not recommended.
+  # config.vm.box_check_update = false
+
+  # Create a forwarded port mapping which allows access to a specific port
+  # within the machine from a port on the host machine. In the example below,
+  # accessing "localhost:8080" will access port 80 on the guest machine.
+  # NOTE: This will enable public access to the opened port
+  # config.vm.network "forwarded_port", guest: 80, host: 8080
+
+  # Create a forwarded port mapping which allows access to a specific port
+  # within the machine from a port on the host machine and only allow access
+  # via 127.0.0.1 to disable public access
+  # config.vm.network "forwarded_port", guest: 80, host: 8080, host_ip: "127.0.0.1"
+
+  # Create a private network, which allows host-only access to the machine
+  # using a specific IP.
+  # config.vm.network "private_network", ip: "192.168.33.10"
+
+  # Create a public network, which generally matched to bridged network.
+  # Bridged networks make the machine appear as another physical device on
+  # your network.
+  # config.vm.network "public_network"
+
+  if Vagrant.has_plugin?("vagrant-hostmanager")
+    config.hostmanager.enabled = true
+    config.hostmanager.manage_host = true
+    config.hostmanager.include_offline = true
+  end
+
+  (1..4).each do |i|
+    config.vm.define "gluster#{i}" do |node|
+      node.vm.hostname = "gluster#{i}"
+      node.vm.network :private_network, ip: "192.168.62.#{100 + i}"
+
+      
+      node.vm.provider "virtualbox" do |vb|
+        # Display the VirtualBox GUI when booting the machine
+        vb.gui = false
+        vb.name = "gluster#{i}"
+
+        # Customize the amount of memory on the VM:
+        vb.memory = "2048"
+        vb.cpus = 2
+
+        file_to_disk = "/Users/sakis/VirtualBox VMs/#{vb.name}/gluster-volume-node-#{i}.vdi"
+        
+        if !File.exists?(file_to_disk)
+
+          vb.customize ['createhd', '--filename', file_to_disk,
+                        '--variant', 'Fixed', '--size', 2048]
+          vb.customize ['storageattach', :id, '--storagectl', 'SCSI', '--port', 4,
+                        '--device', 0, '--type', 'hdd', '--medium', file_to_disk]  
+        end      
+      end
+    end
+  end
+
+  # Share an additional folder to the guest VM. The first argument is
+  # the path on the host to the actual folder. The second argument is
+  # the path on the guest to mount the folder. And the optional third
+  # argument is a set of non-required options.
+  # config.vm.synced_folder "../data", "/vagrant_data"
+
+  # Provider-specific configuration so you can fine-tune various
+  # backing providers for Vagrant. These expose provider-specific options.
+  # Example for VirtualBox:
+  #
+
+  config.vm.provision :shell, inline: <<-SHELL
+  echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQCYe/976cxrwBg8VcXbggQ5zR5zAGPX9EXpWQUY6pTnG//jr3LmrDyzYWANahWZCEXZGYpdfMNhqh9Owdn102kcExL0c0i5EARoUo2846YaqYiJCm0T5RDwHiHU8ksr/FXjMWW/Mx1F2aNDpakSTiDRUVWv7r5ZPyyEccfz8QSz3dI2lJ5syY9c97lfDZalAiuvtRUEfNOWiwthmBZ/UL6/r5JHvc9hvNVoHvKjVsXD/fs7SZ4nM/vx0cujWioKmxmRvtcvGjpY7xrWBQ/JjaSYxaT/BbuaNlg6GvJpw2E3W1yrBRRsfmz+GAuH8UJkJYTM/z5O9mqoAWlbhR9x27iXuBvuYfnzF/CRgmPFwQ7j5KrPJJynXz9s3Rm3X9CTgX0VQ8RP8nfN+G8GSyABPHA/wrR8i/h3EnQFXoaIx82tPY7ak++bMObyuVd6rujB9mFTNZvdW3KLUyVbAzkGU+/c5Fo9bMNZhBhJ4Vc98+aGG+O3XMas62ZvnQunJ9ki1G6XQlJAmS+2eqi1ycRwptyNZf3+XTu8eefT3WO23cDkDA65kSFU+psFffImf30KrFRujeBTeyyNPwIiosz4uE2mOgVyUOW3HHE+BkRPK/hpsRkaf3kzwBwVjuAH9zaRXdty4qD5zrQRzfRWYkouzrwpQbT0FHMzHS8i/+veTq4axw== sakis@sakis-MS-7885" >> /home/ubuntu/.ssh/authorized_keys
+  echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQCpPYWCZ4VMyRc4YfKVLNWTTCYFQiayjTtiiwy7vZLQGXGyo3MpAeL+rEWkCGrGA4awPecGS8pX8dJ8K69MLc7ob7zL3o2WHl8rLLqCdECAZlG8fOtD+lS16UoQNYkTiBreMvaorvQW3IfH0rc469Fesq6A2zp91lldrQ6kPRXDxXRS2TJZ3vKSvULCdARybBnZgRyDG/YvAEwKegQJqsucnW1z5gBVxulSEI1nbFfHhAFHQQlioVJVWdeOvW6Io1yw+qXG0UkliTJIg7XY8swyG7gjOG2LYbcdPKjHWdX9AL/rNqxMGUGskRLBqLisLa6pSta8WOPnkfwn8dcSdlnFdL/IrHhaU+hkow51SJrAVmypOpl1GRQOZmkog0agYI2EjjwwMVArX7mf20zazwvx6UKvpz9/IG8307qTB04PFT/RxeDKojKeHAdKQK4YKTCVAOaIQP0SlylmSAfpJc8mlF0FgYQGVx1/zjivoY//thZbLGvUoxlMAKQyMiKsV0/b3DeD8/wf9TqEjANd2YW6CK/hO8qIUNaYtP93n8fC+6TRCUM3wma+z7V/S/rDHTcrg67VJizhiCCuD8knNu5Zc6JEpgy9HpQjqPkpzpLcq/TgqXHxqvsA3ME1UWvkqPDzlzjF6i9hvw/wBMm3wqwMxv87iQO+2fw/0j7RbEKVTw== Sakis MacBook Pro" >> /home/ubuntu/.ssh/authorized_keys
+  SHELL
+
+  #
+  # View the documentation for the provider you are using for more
+  # information on available options.
+
+  # Define a Vagrant Push strategy for pushing to Atlas. Other push strategies
+  # such as FTP and Heroku are also available. See the documentation at
+  # https://docs.vagrantup.com/v2/push/atlas.html for more information.
+  # config.push.define "atlas" do |push|
+  #   push.app = "YOUR_ATLAS_USERNAME/YOUR_APPLICATION_NAME"
+  # end
+
+  # Enable provisioning with a shell script. Additional provisioners such as
+  # Puppet, Chef, Ansible, Salt, and Docker are also available. Please see the
+  # documentation for more information about their specific syntax and use.
+  # config.vm.provision "shell", inline: <<-SHELL
+  #   apt-get update
+  #   apt-get install -y apache2
+  # SHELL
+end
