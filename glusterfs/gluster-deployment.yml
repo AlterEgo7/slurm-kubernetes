@@ -1,0 +1,26 @@
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: nginx-pod1
+  labels:
+    name: nginx-pod1
+spec:
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: gluster-test
+    spec:
+      containers:
+      - name: nginx-pod1
+        image: gcr.io/google_containers/nginx-slim:0.8
+        ports:
+        - name: web
+          containerPort: 80
+        volumeMounts:
+        - name: gluster-vol1
+          mountPath: /usr/share/nginx/html
+      volumes:
+      - name: gluster-vol1
+        persistentVolumeClaim:
+          claimName: gluster1
