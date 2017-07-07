@@ -1,0 +1,43 @@
+---
+
+- name: Install dm_thin_pool kernel module
+  modprobe:
+    name: dm_thin_pool
+    state: present
+
+- name: Create glusterfs directories
+  file:
+    path: "{{ gluster_kubernetes_workdir }}"
+    state: directory
+
+- name: Download gluster-kubernetes
+  unarchive:
+    src: "https://github.com/gluster/gluster-kubernetes/archive/{{ gluster_kubernetes_version }}.tar.gz"
+    dest: "{{ gluster_kubernetes_workdir }}"
+    remote_src: yes
+
+- name: Download heketi client
+  unarchive:
+    src: "https://github.com/heketi/heketi/releases/download/{{ heketi_version }}/heketi-client-{{ heketi_version }}.linux.amd64.tar.gz"
+    dest: "{{ gluster_kubernetes_workdir }}"
+    remote_src: yes
+
+- name: Copy heketi-cli to /usr/bin/local
+  become: true
+  copy:
+    src: "{{ gluster_kubernetes_workdir }}/heketi-client/bin/heketi-cli"
+    dest: /usr/local/bin
+    remote_src: yes
+
+- name: Add GlusterFS topology file
+  template:
+    src: templates/topology.json
+    dest: "{{ gluster_kubernetes_workdir }}/gluster-kubernetes-1.1/deploy/topology.json"
+
+- name: Create Kubernetes namespace glusterfs
+  command: kubectl create namespace glusterfs
+
+- name: Create glusterfs nodes
+  command: ./gk-deploy -y -g -c kubectl -n glusterfs
+  args:
+    chdir: "{{ gluster_kubernetes_workdir }}/gluster-kubernetes-1.1/deploy"

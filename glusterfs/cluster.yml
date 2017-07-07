@@ -1,0 +1,11 @@
+---
+
+- name: Install Kubernetes
+  include: ../kubernetes-kargo/cluster.yml
+
+- hosts: kube-master
+  run_once: yes
+  roles:
+    - glusterfs
+  tags:
+    - glusterfs
