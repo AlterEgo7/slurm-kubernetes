@@ -1,0 +1,3 @@
+heapster_workdir: "/tmp/heapster"
+heapster_grafana_image: "gcr.io/google_containers/heapster-grafana-amd64"
+heapster_grafana_version: "v4.0.2"
