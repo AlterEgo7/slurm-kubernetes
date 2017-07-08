@@ -28,6 +28,7 @@
     src: "{{ gluster_kubernetes_workdir }}/heketi-client/bin/heketi-cli"
     dest: /usr/local/bin
     remote_src: yes
+    mode: "a+x"
 
 - name: Add GlusterFS topology file
   template:
