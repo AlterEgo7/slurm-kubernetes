@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: grafana
-        image: gcr.io/google_containers/heapster-grafana-amd64:v4.0.2
+        image: gcr.io/google_containers/heapster-grafana-amd64:v4.4.1
         image: {{ heapster_grafana_image }}:{{ heapster_grafana_version }}
         ports:
         - containerPort: 3000

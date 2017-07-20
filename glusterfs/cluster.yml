@@ -2,6 +2,15 @@
 
 - name: Install Kubernetes
   include: ../kubernetes-kargo/cluster.yml
+  tags:
+    - kubernetes
+
+- hosts: kube-master
+  run_once: yes
+  roles:
+    - heapster
+  tags:
+    - heapster
 
 - hosts: kube-master
   run_once: yes

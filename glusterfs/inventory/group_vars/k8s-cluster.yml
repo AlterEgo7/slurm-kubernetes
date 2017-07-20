@@ -12,6 +12,9 @@ kube_apiserver_node_port_range: "5000-50000"
 etcd_image_repo: "192.168.62.1:5000/etcd"
 flannel_image_repo: "192.168.62.1:5000/flannel"
 hyperkube_image_repo: "192.168.62.1:5000/hyperkube"
+heapster_grafana_image: "192.168.62.1:5000/heapster-grafana-amd64"
+
+docker_version: '1.12'
 
 # Logging directory (sysvinit systems)
 kube_log_dir: "/var/log/kubernetes"
@@ -28,7 +31,7 @@ kube_users_dir: "{{ kube_config_dir }}/users"
 kube_api_anonymous_auth: false
 
 ## Change this to use another Kubernetes version, e.g. a current beta release
-kube_version: v1.6.6
+kube_version: v1.7.1
 
 # Where the binaries will be downloaded.
 # Note: ensure that you've enough disk space (about 1G)

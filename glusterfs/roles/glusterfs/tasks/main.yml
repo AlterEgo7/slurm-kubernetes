@@ -35,10 +35,63 @@
     src: templates/topology.json
     dest: "{{ gluster_kubernetes_workdir }}/gluster-kubernetes-1.1/deploy/topology.json"
 
-- name: Create Kubernetes namespace glusterfs
-  command: kubectl create namespace glusterfs
+- name: Add gluster namespace manifest
+  template:
+    src: templates/gluster_namespace.json.j2
+    dest: /tmp/gluster_namespace.json
 
-- name: Create glusterfs nodes
-  command: ./gk-deploy -y -g -c kubectl -n glusterfs
+- name: Create Kubernetes namespace
+  command: kubectl apply -f /tmp/gluster_namespace.json
+
+- name: Label glusterfs nodes
+  command: kubectl label node {{ item }} storagenode=glusterfs --overwrite
+  with_items:
+  - "{{ groups['glusterfs-node'] }}"
+
+- name: Create glusterfs resources
+  command: kubectl --namespace={{ gluster_kubernetes_namespace }} apply -f {{ item }}
+  args:
+    chdir: "{{ gluster_kubernetes_workdir }}/gluster-kubernetes-1.1/deploy/kube-templates"
+  with_items:
+    - "heketi-service-account.yaml"
+    - "glusterfs-daemonset.yaml"
+
+- name: Wait for glusterfs daemonset to come online
+  shell: kubectl --namespace={{ gluster_kubernetes_namespace }} get daemonset glusterfs --no-headers | awk '{ print $4}'
+  register: ready
+  until: ready.stdout == "{{ groups['glusterfs-node'] | length }}"
+  retries: 20
+  delay: 10
+
+- name: Deploy heketi server
+  command: kubectl --namespace={{ gluster_kubernetes_namespace }} apply -f deploy-heketi-deployment.yaml
+  args:
+    chdir: "{{ gluster_kubernetes_workdir }}/gluster-kubernetes-1.1/deploy/kube-templates"
+
+- name: Extract heketi endpoint IP
+  shell: kubectl --namespace=glusterfs get service | grep deploy-heketi | awk '{ print $2 }'
+  register: heketi_ip
+
+- debug: msg="{{ heketi_ip }}"
+
+- name: Wait for heketi to come online
+  shell: kubectl --namespace={{ gluster_kubernetes_namespace }} get deployment --no-headers deploy-heketi | awk '{ print $5 }'
+  register: heketi_ready
+  until: heketi_ready.stdout == "1"
+  retries: 60
+  delay: 1
+
+- debug: msg="{{ heketi_ready }}"
+
+- set_fact:
+    heketi_endpoint: "http://{{ heketi_ip.stdout }}:8080"
+
+- name: Debug heketi
+  debug: msg="{{ heketi_endpoint }}"
+
+- name: Apply glusterfs topology
+  command: heketi-cli topology load --json=topology.json
   args:
     chdir: "{{ gluster_kubernetes_workdir }}/gluster-kubernetes-1.1/deploy"
+  environment:
+    HEKETI_CLI_SERVER: "{{ heketi_endpoint }}"
