@@ -1,0 +1,6 @@
+slurm_workers: 3
+slurm_ssh_port: 22222
+gluster_volume_size: 1Gi
+
+slurm_worker_image: 192.168.62.1:5000/slurmd:17.02.6
+slurm_master_image: 192.168.62.1:5000/slurmctl:17.02.6

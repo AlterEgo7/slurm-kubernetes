@@ -1,0 +1,110 @@
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: gluster1
+  annotations:
+    volume.beta.kubernetes.io/storage-class: gluster-heketi
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ gluster_volume_size }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: slurm-master-ssh
+  labels:
+    app: slurm
+    role: slurm-master
+spec:
+  type: NodePort
+  ports:
+  - port: 2222
+    targetPort: 22
+    nodePort: {{ slurm_ssh_port }}
+    name: slurm-ssh
+  selector:
+    role: slurm-master
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: slurm
+  labels:
+    app: slurm
+spec:
+  clusterIP: None
+  ports:
+  - port: 6817
+    name: slurmctld
+  - port: 6818
+    name: slurmd
+  selector:
+   app: slurm
+---
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: slurm
+spec:
+  serviceName: "slurm"
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: slurm
+        role: slurm-node
+    spec:
+      containers:
+      - name: slurmd
+        image: {{ slurm_worker_image }}
+        command: ["/bin/bash"]
+        args: ["-c", "chown slurm:slurm /data; /usr/bin/supervisord --nodaemon"]
+        ports:
+        - containerPort: 6817
+        volumeMounts:
+        - name: slurm-config-volume
+          mountPath: /usr/local/etc
+        - name: gluster-vol1
+          mountPath: /data
+      volumes:
+      - name: slurm-config-volume
+        configMap:
+          name: slurm-config
+      - name: gluster-vol1
+        persistentVolumeClaim:
+          claimName: gluster1
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: slurm-master
+  labels:
+    app: slurm
+    role: slurm-master
+spec:
+  hostname: slurm-master
+  subdomain: slurm
+  containers:
+  - name: slurmctl
+    image: {{ slurm_master_image }}
+    command: ["/bin/bash"]
+    args: ["-c", "chown slurm:slurm /data; /usr/bin/supervisord --nodaemon"]
+    ports:
+    - containerPort: 22
+    - containerPort: 6818
+    volumeMounts:
+    - name: slurm-config-volume
+      mountPath: /usr/local/etc
+    - name: gluster-vol1
+      mountPath: /data
+  volumes:
+  - name: slurm-config-volume
+    configMap:
+      name: slurm-config
+  - name: gluster-vol1
+    persistentVolumeClaim:
+      claimName: gluster1

@@ -1,0 +1,20 @@
+---
+
+- name: Create slurm manifest directory
+  file:
+    path: /tmp/slurm
+    state: directory
+
+- name: Add kubernetes manifests
+  template:
+    src: "templates/{{ item.src }}"
+    dest: "/tmp/slurm/{{ item.dest }}"
+  with_items:
+    - { src: slurm-config.yaml.j2, dest: /slurm-config.yaml }
+    - { src: slurm.yaml.j2, dest: /slurm.yaml }
+
+- name: Create slurm config map
+  command: kubectl apply -f /tmp/slurm/slurm-config.yaml
+
+- name: Create slurm cluster
+  command: kubectl apply -f /tmp/slurm/slurm.yaml
