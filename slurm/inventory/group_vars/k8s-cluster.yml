@@ -9,6 +9,11 @@ kube_manifest_dir: "{{ kube_config_dir }}/manifests"
 system_namespace: kube-system
 kube_apiserver_node_port_range: "5000-50000"
 
+# Override image repos to point to local private registry
+# for speed purposes. Acts as a local cache for images
+# that are uploaded in the Docker registry
+# Expects a private registry with these images
+# running on localhost
 etcd_image_repo: "192.168.62.1:5000/etcd"
 flannel_image_repo: "192.168.62.1:5000/flannel"
 hyperkube_image_repo: "192.168.62.1:5000/hyperkube"
