@@ -13,7 +13,7 @@
     - { src: 'templates/influxdb.yaml.j2', dest: "{{ heapster_workdir }}/ingluxdb.yaml" }
 
 - name: Create resources
-  command: kubelet create -f {{ heapster_workdir }}
+  command: kubectl create -f {{ heapster_workdir }}
 
 - name: Create Kubernetes Dashboard
   command: kubectl create -f https://git.io/kube-dashboard
