@@ -12,6 +12,15 @@
   tags:
     - heapster
 
+- hosts: glusterfs-node
+  tasks:
+    - name: Install dm_thin_pool kernel module
+      modprobe:
+        name: dm_thin_pool
+        state: present
+  tags:
+    - glusterfs
+
 - hosts: kube-master
   run_once: yes
   roles:
