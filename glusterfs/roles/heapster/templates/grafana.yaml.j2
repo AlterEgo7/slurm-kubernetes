@@ -64,6 +64,6 @@ spec:
   ports:
   - port: 80
     targetPort: 3000
-    nodePort: 33000
+    nodePort: {{ heapster_grafana_port }}
   selector:
     k8s-app: grafana
