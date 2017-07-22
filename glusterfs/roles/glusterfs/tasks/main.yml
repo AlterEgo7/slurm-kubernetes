@@ -1,10 +1,5 @@
 ---
 
-- name: Install dm_thin_pool kernel module
-  modprobe:
-    name: dm_thin_pool
-    state: present
-
 - name: Create glusterfs directories
   file:
     path: "{{ gluster_kubernetes_workdir }}"
@@ -32,7 +27,7 @@
 
 - name: Add GlusterFS topology file
   template:
-    src: templates/topology.json
+    src: templates/topology.json.j2
     dest: "{{ gluster_kubernetes_workdir }}/gluster-kubernetes-1.1/deploy/topology.json"
 
 - name: Add gluster namespace manifest
@@ -60,8 +55,8 @@
   shell: kubectl --namespace={{ gluster_kubernetes_namespace }} get daemonset glusterfs --no-headers | awk '{ print $4}'
   register: ready
   until: ready.stdout == "{{ groups['glusterfs-node'] | length }}"
-  retries: 20
-  delay: 10
+  retries: 60
+  delay: 5
 
 - name: Deploy heketi server
   command: kubectl --namespace={{ gluster_kubernetes_namespace }} apply -f deploy-heketi-deployment.yaml
@@ -81,13 +76,8 @@
   retries: 60
   delay: 1
 
-- debug: msg="{{ heketi_ready }}"
-
 - set_fact:
     heketi_endpoint: "http://{{ heketi_ip.stdout }}:8080"
-
-- name: Debug heketi
-  debug: msg="{{ heketi_endpoint }}"
 
 - name: Apply glusterfs topology
   command: heketi-cli topology load --json=topology.json
@@ -95,3 +85,11 @@
     chdir: "{{ gluster_kubernetes_workdir }}/gluster-kubernetes-1.1/deploy"
   environment:
     HEKETI_CLI_SERVER: "{{ heketi_endpoint }}"
+
+- name: Add gluster storage class manifest
+  template:
+    src: templates/gluster-storage.yaml.j2
+    dest: /tmp/gluster-storage.yaml
+
+- name: Create gluster storage class
+  command: kubectl --namespace={{ gluster_kubernetes_namespace }} create -f /tmp/gluster-storage.yaml
