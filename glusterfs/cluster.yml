@@ -27,3 +27,10 @@
     - glusterfs
   tags:
     - glusterfs
+
+- hosts: kube-master
+  run_once: yes
+  roles:
+    - slurm
+  tags:
+    - slurm
