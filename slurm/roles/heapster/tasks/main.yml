@@ -8,7 +8,7 @@
 - name: Copy manifest templates
   template: src="{{ item.src }}" dest="{{ item.dest }}"
   with_items:
-    - { src: 'templates/grafana.yaml.j2', dest: "{{ heapster_workdir }}/grafana.yaml" }
+    - { src: 'templates/heapster.yaml.j2', dest: "{{ heapster_workdir }}/heapster.yaml" }
     - { src: 'templates/grafana.yaml.j2', dest: "{{ heapster_workdir }}/grafana.yaml" }
     - { src: 'templates/influxdb.yaml.j2', dest: "{{ heapster_workdir }}/ingluxdb.yaml" }
 
