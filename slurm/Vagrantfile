@@ -60,12 +60,12 @@ Vagrant.configure("2") do |config|
         vb.memory = "2048"
         vb.cpus = 2
 
-        file_to_disk = "/Users/sakis/VirtualBox VMs/#{vb.name}/gluster-volume-node-#{i}.vdi"
+        file_to_disk = "/Users/sakis/VirtualBox VMs/#{vb.name}/gluster-volume.vdi"
         
         if !File.exists?(file_to_disk)
 
           vb.customize ['createhd', '--filename', file_to_disk,
-                        '--variant', 'Fixed', '--size', 2048]
+                        '--variant', 'Standard', '--size', 2048]
           vb.customize ['storageattach', :id, '--storagectl', 'SCSI', '--port', 4,
                         '--device', 0, '--type', 'hdd', '--medium', file_to_disk]  
         end      
