@@ -64,7 +64,7 @@
     chdir: "{{ gluster_kubernetes_workdir }}/gluster-kubernetes-1.1/deploy/kube-templates"
 
 - name: Extract heketi endpoint IP
-  shell: kubectl --namespace=glusterfs get service | grep deploy-heketi | awk '{ print $2 }'
+  shell: kubectl --namespace={{ gluster_kubernetes_namespace }} get service | grep deploy-heketi | awk '{ print $2 }'
   register: heketi_ip
 
 - debug: msg="{{ heketi_ip }}"
