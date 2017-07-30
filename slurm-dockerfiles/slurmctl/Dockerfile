@@ -13,6 +13,8 @@ RUN sed 's@session\s*required\s*pam_loginuid.so@session optional pam_loginuid.so
 RUN echo "export VISIBLE=now" >> /etc/profile
 ADD sshd.conf /etc/supervisor/conf.d/sshd.conf
 
+COPY liveness.sh /liveness.sh
+
 EXPOSE 22
 
 CMD /usr/bin/supervisord --nodaemon

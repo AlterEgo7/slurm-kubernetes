@@ -70,6 +70,13 @@ spec:
           mountPath: /usr/local/etc
         - name: gluster-vol1
           mountPath: /data
+        livenessProbe:
+          exec:
+            command:
+            - /bin/bash
+            - /liveness.sh
+          initialDelaySeconds: 5
+          periodSeconds: 5
       volumes:
       - name: slurm-config-volume
         configMap:
@@ -101,6 +108,13 @@ spec:
       mountPath: /usr/local/etc
     - name: gluster-vol1
       mountPath: /data
+    livenessProbe:
+      exec:
+        command:
+        - /bin/bash
+        - /liveness.sh
+      initialDelaySeconds: 5
+      periodSeconds: 5
   volumes:
   - name: slurm-config-volume
     configMap:
