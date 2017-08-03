@@ -2,9 +2,6 @@ FROM localhost:5000/slurm-base:17.02.6
 
 COPY slurmctld.conf /etc/supervisor/conf.d/slurmctld.conf
 
-RUN chown -R root:slurm /var/spool && \
-    chmod -R g+w /var/spool
-
 RUN apt-get update && apt-get install -y openssh-server
 RUN mkdir /var/run/sshd
 RUN echo 'slurm:slurm' | chpasswd
