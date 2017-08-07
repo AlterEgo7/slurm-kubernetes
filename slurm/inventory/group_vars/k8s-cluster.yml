@@ -14,10 +14,10 @@ kube_apiserver_node_port_range: "5000-50000"
 # that are uploaded in the Docker registry
 # Expects a private registry with these images
 # running on localhost
-etcd_image_repo: "192.168.62.1:5000/etcd"
-flannel_image_repo: "192.168.62.1:5000/flannel"
-hyperkube_image_repo: "192.168.62.1:5000/hyperkube"
-heapster_grafana_image: "192.168.62.1:5000/heapster-grafana-amd64"
+#etcd_image_repo: "192.168.62.1:5000/etcd"
+#flannel_image_repo: "192.168.62.1:5000/flannel"
+#hyperkube_image_repo: "192.168.62.1:5000/hyperkube"
+#heapster_grafana_image: "192.168.62.1:5000/heapster-grafana-amd64"
 
 docker_version: '1.12'
 
