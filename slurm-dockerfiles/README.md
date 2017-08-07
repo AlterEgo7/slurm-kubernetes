@@ -14,3 +14,4 @@ Note that both the master and worker images used must extend the same base image
 
 * Dockerfiles build slurm from source. This takes some time.
 * Images have not been optimized for size yet.
+* The `slurm` user SSH password is set by default to *slurm*, however this should be overridden for security purposes.
