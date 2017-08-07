@@ -51,6 +51,7 @@ metadata:
   name: slurm
 spec:
   serviceName: "slurm"
+  podManagementPolicy: Parallel
   replicas: 3
   template:
     metadata:
@@ -70,6 +71,13 @@ spec:
           mountPath: /usr/local/etc
         - name: gluster-vol1
           mountPath: /data
+        livenessProbe:
+          exec:
+            command:
+            - /bin/bash
+            - /liveness.sh
+          initialDelaySeconds: 5
+          periodSeconds: 5
       volumes:
       - name: slurm-config-volume
         configMap:
@@ -88,6 +96,7 @@ metadata:
 spec:
   hostname: slurm-master
   subdomain: slurm
+  restartPolicy: Always
   containers:
   - name: slurmctl
     image: {{ slurm_master_image }}
@@ -101,6 +110,13 @@ spec:
       mountPath: /usr/local/etc
     - name: gluster-vol1
       mountPath: /data
+    livenessProbe:
+      exec:
+        command:
+        - /bin/bash
+        - /liveness.sh
+      initialDelaySeconds: 5
+      periodSeconds: 5
   volumes:
   - name: slurm-config-volume
     configMap:
