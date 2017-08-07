@@ -92,4 +92,4 @@
     dest: /tmp/gluster-storage.yaml
 
 - name: Create gluster storage class
-  command: kubectl --namespace={{ gluster_kubernetes_namespace }} create -f /tmp/gluster-storage.yaml
+  command: kubectl --namespace={{ gluster_kubernetes_namespace }} apply -f /tmp/gluster-storage.yaml
