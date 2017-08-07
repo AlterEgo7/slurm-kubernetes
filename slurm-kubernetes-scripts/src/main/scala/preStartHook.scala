@@ -1,25 +1,37 @@
 import java.io.{BufferedWriter, FileOutputStream, OutputStreamWriter}
 import java.net.InetAddress
 
-import scala.io.Source
+import http_client.HttpClient
+
+import scala.util.{Failure, Success}
 
 object preStartHook {
+
+  import scala.concurrent.ExecutionContext.Implicits._
+
   def main(args: Array[String]): Unit = {
 
-    val fileLines = Source.fromResource("slurm-config.yaml").getLines().toVector
-    val newLines = if (fileLines.exists { l => l.contains(InetAddress.getLocalHost.getHostName) }) fileLines else addPartitionName(addNodeName(fileLines))
+    val client = HttpClient()
 
-    val writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream("output.yaml")))
-    for (line <- newLines) {
-      writer.write(line + "\n")
+    val responseFuture = client.get("http://gluster1:8081/api/v1/namespaces/default/configmaps/slurm-config")
+      .andThen{ case _ => client.close() }
+      .andThen{ case _ => HttpClient.terminate() }
+
+    responseFuture onComplete {
+      case Success(response) => {
+        val body = response.body
+        val fileLines = body.split("\\\\n").toVector
+
+        val newLines = if (fileLines.exists { l => l.contains(InetAddress.getLocalHost.getHostName) }) fileLines else addPartitionName(addNodeName(fileLines))
+
+        val writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream("output.json")))
+
+        writer.write(newLines.mkString("\\\\n"))
+        writer.close()
+      }
+      case Failure(cause) => Failure(new Exception("Kubernetes API not found"))
     }
-    writer.close()
 
-    //    println(endNodeNamesIndex)
-
-    //    fileLines.foreach {
-    //      println
-    //    }
   }
 
   def addNodeName(lines: Seq[String]): Seq[String] = {
