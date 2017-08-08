@@ -1,0 +1,5 @@
+---
+
+- name: Reset Kubernetes
+  include: ../kubernetes-kargo/reset.yml
+
