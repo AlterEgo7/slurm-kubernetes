@@ -15,9 +15,7 @@
             },
             "zone": 1
           },
-          "devices": [
-            "/dev/sdc"
-          ]
+          "devices": {{ hostvars[host]['glusterfs_storage_drive'] | to_nice_json(indent=2) | indent(width=10) }}
         }{{ "," if not loop.last else "" }}
 {% endfor %}
       ]
