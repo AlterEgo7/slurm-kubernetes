@@ -9,6 +9,10 @@ import play.api.libs.ws.ahc.StandaloneAhcWSClient
 import scala.concurrent.Future
 
 class HttpClient(client: StandaloneAhcWSClient) {
+  def url(url: String): StandaloneWSRequest = {
+    client.url(url)
+  }
+
   def get(url: String): Future[StandaloneWSRequest#Response] = {
     client.url(url).get()
   }
@@ -20,17 +24,13 @@ class HttpClient(client: StandaloneAhcWSClient) {
 }
 
 object HttpClient {
-
   implicit val system = ActorSystem()
 
-  def apply(): HttpClient = {
-    system.registerOnTermination {
-      System.exit(0)
-    }
-
+  def apply(): StandaloneAhcWSClient = {
     implicit val materializer = ActorMaterializer()
 
-    new HttpClient(StandaloneAhcWSClient())
+//    new HttpClient(StandaloneAhcWSClient())
+    StandaloneAhcWSClient()
   }
 
   def terminate(): Unit = system.terminate()

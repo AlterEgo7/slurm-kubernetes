@@ -1,7 +1,9 @@
 import java.io.{BufferedWriter, FileOutputStream, OutputStreamWriter}
 import java.net.InetAddress
+import play.api.libs.json._
 
 import http_client.HttpClient
+import play.api.libs.json.Json
 
 import scala.util.{Failure, Success}
 
@@ -13,14 +15,18 @@ object preStartHook {
 
     val client = HttpClient()
 
-    val responseFuture = client.get("http://gluster1:8081/api/v1/namespaces/default/configmaps/slurm-config")
-      .andThen{ case _ => client.close() }
-      .andThen{ case _ => HttpClient.terminate() }
+    val responseFuture = client.url("http://gluster1:8081/api/v1/namespaces/default/configmaps/slurm-config").addQueryStringParameters("export" -> "true").get()
+      .andThen { case _ => client.close() }
+      .andThen { case _ => HttpClient.terminate() }
 
     responseFuture onComplete {
-      case Success(response) => {
+      case Success(response) =>
         val body = response.body
-        val fileLines = body.split("\\\\n").toVector
+
+        val jsonBody = Json.parse(body)
+        val jsonTransformer = (__ \ "metadata" \ "annotations").json.prune
+        val prunedBody = jsonBody.transform(jsonTransformer)
+        val fileLines = Json.stringify(prunedBody.asInstanceOf[JsSuccess[JsValue]].value).split("\\\\n").toVector
 
         val newLines = if (fileLines.exists { l => l.contains(InetAddress.getLocalHost.getHostName) }) fileLines else addPartitionName(addNodeName(fileLines))
 
@@ -28,8 +34,11 @@ object preStartHook {
 
         writer.write(newLines.mkString("\\\\n"))
         writer.close()
+
+      case Failure(cause) => {
+        println("Kubernetes API error")
+        System.exit(1)
       }
-      case Failure(cause) => Failure(new Exception("Kubernetes API not found"))
     }
 
   }
@@ -43,7 +52,7 @@ object preStartHook {
 
     val (filePrefix, fileSuffix) = lines.splitAt(lastNodeNameIndex)
     filePrefix ++
-      List(s"      NodeName=${InetAddress.getLocalHost.getHostName} CPUs=2 SocketsPerBoard=1 CoresPerSocket=2 ThreadsPerCore=1 RealMemory=2000 State=UNKNOWN\n") ++
+      List(s"NodeName=${InetAddress.getLocalHost.getHostName} CPUs=2 SocketsPerBoard=1 CoresPerSocket=2 ThreadsPerCore=1 RealMemory=2000 State=UNKNOWN") ++
       fileSuffix
   }
 
@@ -52,7 +61,7 @@ object preStartHook {
 
     val hostName = InetAddress.getLocalHost.getHostName
     if (partitionLineIndex == -1) {
-      lines ++ List(s"      PartitionName=debug Nodes=$hostName, Default=YES MaxTime=INFINITE State=UP")
+      lines ++ List(s"PartitionName=debug Nodes=$hostName, Default=YES MaxTime=INFINITE State=UP")
     } else {
       val partitionNameRegex = """^\s*PartitionName=.*Nodes=(\S*,).*""".r
       val partitionNameRegex(previousHostnames) = lines(partitionLineIndex)
