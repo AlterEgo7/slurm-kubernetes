@@ -67,8 +67,6 @@
   shell: kubectl --namespace={{ gluster_kubernetes_namespace }} get service | grep deploy-heketi | awk '{ print $2 }'
   register: heketi_ip
 
-- debug: msg="{{ heketi_ip }}"
-
 - name: Wait for heketi to come online
   shell: kubectl --namespace={{ gluster_kubernetes_namespace }} get deployment --no-headers deploy-heketi | awk '{ print $5 }'
   register: heketi_ready
