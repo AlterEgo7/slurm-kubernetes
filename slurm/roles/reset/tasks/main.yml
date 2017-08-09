@@ -1,0 +1,37 @@
+---
+
+- name: Include slurm vars
+  include_vars: ../../slurm/defaults/main.yml
+  
+- name: Include glusterfs vars
+  include_vars: ../../glusterfs/defaults/main.yml
+
+- name: Delete Slurm StatefulSet
+  command: kubectl delete statefulset slurm --ignore-not-found=true
+
+- name: Delete Slurm master
+  command: kubectl delete pod slurm-master --ignore-not-found=true
+
+- name: Delete other Slurm resources
+  command: kubectl delete -f /tmp/slurm --ignore-not-found=true
+
+- name: Delete GlusterFS StorageClass
+  command: kubectl delete storageclass gluster-heketi --ignore-not-found=true
+
+- name: Extract heketi endpoint IP
+  shell: kubectl --namespace={{ gluster_kubernetes_namespace }} get service | grep deploy-heketi | awk '{ print $2 }'
+  register: heketi_ip
+
+- set_fact:
+    heketi_endpoint: "http://{{ heketi_ip.stdout }}:8080"
+
+- name: Wait for GlusterFS bricks to be deleted
+  pause:
+    seconds: 10    
+
+- name: Delete GlusterFS devices
+  shell: |
+    devices=`heketi-cli topology info | grep -e 'Size' | awk '{ print $1 }' | cut -d: -f 2`
+    for i in $devices; do heketi-cli device delete $i; done
+  environment:
+    HEKETI_CLI_SERVER: "{{ heketi_endpoint }}"

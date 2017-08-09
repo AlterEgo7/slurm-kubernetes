@@ -1,5 +1,17 @@
 ---
+- name: Load defaults
+  hosts: all
+  roles:
+    - ../kubernetes-kargo/roles/kubespray-defaults
+
+# - name: Remove Slurm resources
+- name: Reset Cluster
+  hosts: kube-master
+  run_once: true
+  roles: 
+    - { role: reset, tags: slurm }
 
 - name: Reset Kubernetes
-  include: ../kubernetes-kargo/reset.yml
-
+  hosts: all
+  roles: 
+    - { role: ../kubernetes-kargo/roles/reset, tags: kubernetes }
