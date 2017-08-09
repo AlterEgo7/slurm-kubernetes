@@ -16,32 +16,35 @@ object preStartHook {
     val client = HttpClient()
 
     val responseFuture = client.url("http://gluster1:8081/api/v1/namespaces/default/configmaps/slurm-config").addQueryStringParameters("export" -> "true").get()
-      .andThen { case _ => client.close() }
-      .andThen { case _ => HttpClient.terminate() }
 
-    responseFuture onComplete {
-      case Success(response) =>
-        val body = response.body
 
-        val jsonBody = Json.parse(body)
-        val jsonTransformer = (__ \ "metadata" \ "annotations").json.prune
-        val prunedBody = jsonBody.transform(jsonTransformer)
-        val fileLines = Json.stringify(prunedBody.asInstanceOf[JsSuccess[JsValue]].value).split("\\\\n").toVector
+    val newLines = responseFuture map { response =>
+      val body = response.body
 
-        val newLines = if (fileLines.exists { l => l.contains(InetAddress.getLocalHost.getHostName) }) fileLines else addPartitionName(addNodeName(fileLines))
+      val jsonBody = Json.parse(body)
+      val jsonTransformer = (__ \ "metadata" \ "annotations").json.prune
+      val prunedBody = jsonBody.transform(jsonTransformer)
+      val fileLines = Json.stringify(prunedBody.asInstanceOf[JsSuccess[JsValue]].value).split("\\\\n").toVector
 
-        val writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream("output.json")))
+      if (fileLines.exists { l => l.contains(InetAddress.getLocalHost.getHostName) }) System.exit(0)
 
-        writer.write(newLines.mkString("\\\\n"))
-        writer.close()
-
-      case Failure(cause) => {
-        println("Kubernetes API error")
-        System.exit(1)
-      }
+      addPartitionName(addNodeName(fileLines))
     }
 
+    val postResponse = newLines.flatMap{ lines =>
+      client.url("http://gluster1:8081/api/v1/namespaces/default/configmaps/slurm-config").addHttpHeaders("Content-Type" -> "application/merge-patch+json")
+        .patch(lines.mkString("\\n"))
+    }.andThen { case _ => client.close() }.andThen { case _ => HttpClient.terminate() }
+
+    postResponse onComplete{
+      case Failure(f) =>
+        f.printStackTrace()
+        println("Kubernetes API error")
+        System.exit(1)
+      case Success(response) => println(response.status)
+    }
   }
+
 
   def addNodeName(lines: Seq[String]): Seq[String] = {
     val lastNodeNameIndex = if (lines.exists { l => l.contains("NodeName=") }) {
