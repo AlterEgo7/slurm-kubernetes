@@ -2,3 +2,5 @@
 *.retry
 vagrant_shared_folder/
 .vagrant/
+
+.vscode
