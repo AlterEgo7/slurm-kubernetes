@@ -1,6 +1,8 @@
 #!/bin/bash
 
+set -e
 hostname="$(hostname -f)"
-status="$(sinfo -h -n $hostname --dead | awk '{ print $4 }')"
+sinfo="$(sinfo -h -n $hostname --dead)"
+status="$($sinfo | awk '{ print $4 }')"
 
 exit $status
