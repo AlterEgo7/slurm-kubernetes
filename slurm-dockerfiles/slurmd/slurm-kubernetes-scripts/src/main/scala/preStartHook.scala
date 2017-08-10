@@ -1,11 +1,11 @@
-import java.io.{BufferedWriter, FileOutputStream, OutputStreamWriter}
+import java.io.FileNotFoundException
 import java.net.InetAddress
-import play.api.libs.json._
 
 import http_client.HttpClient
-import play.api.libs.json.Json
+import play.api.libs.json.{Json, _}
 
-import scala.util.{Failure, Success}
+import scala.io.Source
+import scala.util.{Failure, Success, Try}
 
 object preStartHook {
 
@@ -15,7 +15,22 @@ object preStartHook {
 
     val client = HttpClient()
 
-    val responseFuture = client.url("http://gluster1:8081/api/v1/namespaces/default/configmaps/slurm-config").addQueryStringParameters("export" -> "true").get()
+    val namespace: String = Try({
+      Source.fromFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace").mkString
+    }).getOrElse("default")
+
+    val token: String = Try({
+      Source.fromFile("/var/run/secrets/kubernetes.io/serviceaccount/token").mkString
+    }).recoverWith({
+      case (ex: FileNotFoundException) =>
+        client.close()
+        HttpClient.terminate()
+        Failure(ex)
+    }).get
+
+    val responseFuture = client.url(s"https://kubernetes/api/v1/$namespace/default/configmaps/slurm-config")
+      .addQueryStringParameters("export" -> "true")
+      .addHttpHeaders("Authorization" -> s"Bearer $token").get()
 
 
     val newLines = responseFuture map { response =>
@@ -31,16 +46,18 @@ object preStartHook {
       addPartitionName(addNodeName(fileLines))
     }
 
-    val postResponse = newLines.flatMap{ lines =>
-      client.url("http://gluster1:8081/api/v1/namespaces/default/configmaps/slurm-config").addHttpHeaders("Content-Type" -> "application/merge-patch+json")
+    val postResponse = newLines.flatMap { lines =>
+      client.url(s"https://kubernetes/api/v1/namespaces/$namespace/configmaps/slurm-config")
+        .addHttpHeaders("Content-Type" -> "application/merge-patch+json", "Authorization" -> s"Bearer $token")
         .patch(lines.mkString("\\n"))
     }.andThen { case _ => client.close() }.andThen { case _ => HttpClient.terminate() }
 
-    postResponse onComplete{
+    postResponse onComplete {
       case Failure(f) =>
-        f.printStackTrace()
+        client.close()
+        HttpClient.terminate()
         println("Kubernetes API error")
-        System.exit(1)
+        f.printStackTrace()
       case Success(response) => println(response.status)
     }
   }
