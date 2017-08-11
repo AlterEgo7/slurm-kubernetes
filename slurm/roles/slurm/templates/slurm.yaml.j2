@@ -49,6 +49,7 @@ spec:
       containers:
       - name: slurmd
         image: {{ slurm_worker_image }}
+        imagePullPolicy: Always
         command: ["/bin/bash"]
         args: ["-c", "sleep 5; chown slurm:slurm /data; java -jar /hooks.jar > hooks.log 2>&1; /usr/bin/supervisord --nodaemon"]
         ports:
@@ -66,15 +67,9 @@ spec:
           initialDelaySeconds: 5
           periodSeconds: 5
       - name: kubeapi-proxy
-        image: 192.168.62.1:5000/hyperkube:v1.7.2_coreos.0
+        image: 192.168.62.1:5000/hyperkube:{{ kube_version }}_coreos.0
         command: ["kubectl"]
         args: ["proxy", "-p", "8001"]
-        liveness:
-          httpGet:
-            path: /
-            port: 8001
-          initialDelaySeconds: 2
-          periodSeconds: 5
       volumes:
       - name: slurm-config-volume
         configMap:
@@ -97,6 +92,7 @@ spec:
   containers:
   - name: slurmctl
     image: {{ slurm_master_image }}
+    imagePullPolicy: Always
     command: ["/bin/bash"]
     args: ["-c", "chown slurm:slurm /data; /usr/bin/supervisord --nodaemon"]
     ports:
