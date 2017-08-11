@@ -27,9 +27,8 @@ object HttpClient {
   implicit val system = ActorSystem()
 
   def apply(): StandaloneAhcWSClient = {
-    implicit val materializer = ActorMaterializer()
+    implicit val materializer: ActorMaterializer = ActorMaterializer()
 
-//    new HttpClient(StandaloneAhcWSClient())
     StandaloneAhcWSClient()
   }
 

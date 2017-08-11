@@ -1,4 +1,3 @@
-import java.io.FileNotFoundException
 import java.net.InetAddress
 
 import http_client.HttpClient
@@ -19,37 +18,34 @@ object preStartHook {
       Source.fromFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace").mkString
     }).getOrElse("default")
 
-    val token: String = Try({
-      Source.fromFile("/var/run/secrets/kubernetes.io/serviceaccount/token").mkString
-    }).recoverWith({
-      case (ex: FileNotFoundException) =>
-        client.close()
-        HttpClient.terminate()
-        Failure(ex)
-    }).get
-
-    val responseFuture = client.url(s"https://kubernetes/api/v1/$namespace/default/configmaps/slurm-config")
+    val responseFuture = client.url(s"http://localhost:8001/api/v1/namespaces/$namespace/configmaps/slurm-config")
       .addQueryStringParameters("export" -> "true")
-      .addHttpHeaders("Authorization" -> s"Bearer $token").get()
+      .get()
 
 
     val newLines = responseFuture map { response =>
-      val body = response.body
 
-      val jsonBody = Json.parse(body)
-      val jsonTransformer = (__ \ "metadata" \ "annotations").json.prune
-      val prunedBody = jsonBody.transform(jsonTransformer)
-      val fileLines = Json.stringify(prunedBody.asInstanceOf[JsSuccess[JsValue]].value).split("\\\\n").toVector
+      if (response.status == 200) {
+        val body = response.body
+        val jsonBody = Json.parse(body)
+        val jsonTransformer = (__ \ "metadata" \ "annotations").json.prune
+        val prunedBody = jsonBody.transform(jsonTransformer)
+        val fileLines = Json.stringify(prunedBody.asInstanceOf[JsSuccess[JsValue]].value).split("\\\\n").toVector
 
-      if (fileLines.exists { l => l.contains(InetAddress.getLocalHost.getHostName) }) System.exit(0)
+        if (fileLines.exists { l => l.contains(InetAddress.getLocalHost.getHostName) }) System.exit(0)
 
-      addPartitionName(addNodeName(fileLines))
+        Success(addPartitionName(addNodeName(fileLines)))
+      } else {
+        Failure(new Exception("Resource not found"))
+      }
+
     }
 
-    val postResponse = newLines.flatMap { lines =>
-      client.url(s"https://kubernetes/api/v1/namespaces/$namespace/configmaps/slurm-config")
-        .addHttpHeaders("Content-Type" -> "application/merge-patch+json", "Authorization" -> s"Bearer $token")
-        .patch(lines.mkString("\\n"))
+    val postResponse = newLines.flatMap {
+      case Success(lines) =>
+        client.url(s"http://localhost:8001/api/v1/namespaces/$namespace/configmaps/slurm-config")
+          .addHttpHeaders("Content-Type" -> "application/merge-patch+json")
+          .patch(lines.mkString("\\n"))
     }.andThen { case _ => client.close() }.andThen { case _ => HttpClient.terminate() }
 
     postResponse onComplete {
@@ -58,7 +54,8 @@ object preStartHook {
         HttpClient.terminate()
         println("Kubernetes API error")
         f.printStackTrace()
-      case Success(response) => println(response.status)
+      case Success(response) =>
+        println(response.status)
     }
   }
 
@@ -71,15 +68,17 @@ object preStartHook {
     }
 
     val (filePrefix, fileSuffix) = lines.splitAt(lastNodeNameIndex)
+    val hostname = InetAddress.getLocalHost.getCanonicalHostName
+
     filePrefix ++
-      List(s"NodeName=${InetAddress.getLocalHost.getHostName} CPUs=2 SocketsPerBoard=1 CoresPerSocket=2 ThreadsPerCore=1 RealMemory=2000 State=UNKNOWN") ++
+      List(s"NodeName=$hostname CPUs=2 SocketsPerBoard=1 CoresPerSocket=2 ThreadsPerCore=1 RealMemory=2000 State=UNKNOWN") ++
       fileSuffix
   }
 
   def addPartitionName(lines: Seq[String]): Seq[String] = {
     val partitionLineIndex = lines.indexWhere { l => l.contains("PartitionName=") }
 
-    val hostName = InetAddress.getLocalHost.getHostName
+    val hostName = InetAddress.getLocalHost.getCanonicalHostName
     if (partitionLineIndex == -1) {
       lines ++ List(s"PartitionName=debug Nodes=$hostName, Default=YES MaxTime=INFINITE State=UP")
     } else {
