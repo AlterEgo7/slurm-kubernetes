@@ -1,8 +1,10 @@
 FROM localhost:5000/slurm-base:17.02.6
 
 COPY slurmctld.conf /etc/supervisor/conf.d/slurmctld.conf
+COPY config-reload.sh /config-reload.sh
+COPY config-watch.conf /etc/supervisor/conf.d/config-watch.conf
 
-RUN apt-get update && apt-get install -y openssh-server cython
+RUN apt-get update && apt-get install -y openssh-server cython inotify-tools
 RUN mkdir /var/run/sshd
 RUN echo 'slurm:slurm' | chpasswd
 RUN sed -i 's/PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
