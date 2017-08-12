@@ -53,7 +53,7 @@ object PreStop {
         println("Kubernetes API error")
         f.printStackTrace()
       case Success(response) =>
-        println(response.status)
+        println(  response.status)
     }
   }
 

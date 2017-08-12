@@ -13,5 +13,6 @@ COPY slurmd.conf /etc/supervisor/conf.d/slurmd.conf
 COPY --from=builder /slurm-kubernetes-scripts/target/scala-2.12/slurm-kubernetes-scripts-assembly-1.0.jar /hooks.jar
 
 COPY liveness.sh /liveness.sh
+COPY preStop.sh /preStop.sh
 
 CMD /usr/bin/supervisord --nodaemon

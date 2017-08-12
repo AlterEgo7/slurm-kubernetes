@@ -38,7 +38,6 @@ metadata:
   name: slurm
 spec:
   serviceName: "slurm"
-  podManagementPolicy: Parallel
   replicas: 3
   template:
     metadata:
@@ -51,7 +50,7 @@ spec:
         image: {{ slurm_worker_image }}
         imagePullPolicy: Always
         command: ["/bin/bash"]
-        args: ["-c", "sleep 5; chown slurm:slurm /data; java -jar /hooks.jar > hooks.log 2>&1; /usr/bin/supervisord --nodaemon"]
+        args: ["-c", "sleep 5; chown slurm:slurm /data; java -jar /hooks.jar preStart > hooks.log 2>&1; sleep 60; /usr/bin/supervisord --nodaemon"]
         ports:
         - containerPort: 6817
         volumeMounts:
@@ -64,12 +63,21 @@ spec:
             command:
             - /bin/bash
             - /liveness.sh
-          initialDelaySeconds: 5
+          initialDelaySeconds: 70
           periodSeconds: 5
+        lifecycle:
+          preStop:
+            exec:
+              command: ["bash", "/preStop.sh"]
       - name: kubeapi-proxy
         image: 192.168.62.1:5000/hyperkube:{{ kube_version }}_coreos.0
         command: ["kubectl"]
         args: ["proxy", "-p", "8001"]
+        lifecycle:
+          preStop:
+            exec:
+              command: ["bash", "-c", "sleep 5"]
+      terminationGracePeriodSeconds: 120
       volumes:
       - name: slurm-config-volume
         configMap:
