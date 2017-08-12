@@ -7,7 +7,7 @@ RUN mkdir /var/lib/slurm
 RUN useradd slurm -d /var/lib/slurm && \
     chown -R slurm:slurm /var/lib/slurm
 
-RUN apt-get update && apt install -y git munge curl gcc make bzip2 supervisor python python-dev \
+RUN apt-get update && apt install -y git munge curl gcc make bzip2 supervisor python python-dev netcat \
     libmunge-dev libmunge2 lua5.3 lua5.3-dev libopenmpi-dev openmpi-bin \
     gfortran vim python-mpi4py python-numpy python-psutil sudo psmisc \
     software-properties-common python-software-properties iputils-ping wget
