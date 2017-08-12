@@ -6,11 +6,11 @@ import play.api.libs.json.{Json, _}
 import scala.io.Source
 import scala.util.{Failure, Success, Try}
 
-object preStartHook {
+object PreDestroy {
 
   import scala.concurrent.ExecutionContext.Implicits._
 
-  def main(args: Array[String]): Unit = {
+  def apply(): Unit = {
 
     val client = HttpClient()
 
@@ -32,9 +32,7 @@ object preStartHook {
         val prunedBody = jsonBody.transform(jsonTransformer)
         val fileLines = Json.stringify(prunedBody.asInstanceOf[JsSuccess[JsValue]].value).split("\\\\n").toVector
 
-        if (fileLines.exists { l => l.contains(InetAddress.getLocalHost.getHostName) }) System.exit(0)
-
-        Success(addPartitionName(addNodeName(fileLines)))
+        Success(removePartitionName(removeNodeName(fileLines)))
       } else {
         Failure(new Exception("Resource not found"))
       }
@@ -60,31 +58,20 @@ object preStartHook {
   }
 
 
-  def addNodeName(lines: Seq[String]): Seq[String] = {
-    val lastNodeNameIndex = if (lines.exists { l => l.contains("NodeName=") }) {
-      lines.zipWithIndex.filter { case (line, _) => line.trim.startsWith("NodeName=") }.last._2 + 1
-    } else {
-      lines.size
-    }
-
-    val (filePrefix, fileSuffix) = lines.splitAt(lastNodeNameIndex)
+  def removeNodeName(lines: Seq[String]): Seq[String] = {
     val hostname = InetAddress.getLocalHost.getCanonicalHostName
 
-    filePrefix ++
-      List(s"NodeName=$hostname CPUs=2 SocketsPerBoard=1 CoresPerSocket=2 ThreadsPerCore=1 RealMemory=2000 State=UNKNOWN") ++
-      fileSuffix
+    lines.filterNot{ _.trim.startsWith(s"NodeName=$hostname") }
   }
 
-  def addPartitionName(lines: Seq[String]): Seq[String] = {
+  def removePartitionName(lines: Seq[String]): Seq[String] = {
     val partitionLineIndex = lines.indexWhere { l => l.contains("PartitionName=") }
 
-    val hostName = InetAddress.getLocalHost.getCanonicalHostName
+    val hostname = InetAddress.getLocalHost.getCanonicalHostName
     if (partitionLineIndex == -1) {
-      lines ++ List(s"PartitionName=debug Nodes=$hostName, Default=YES MaxTime=INFINITE State=UP")
+      lines
     } else {
-      val partitionNameRegex = """^\s*PartitionName=.*Nodes=(\S*,).*""".r
-      val partitionNameRegex(previousHostnames) = lines(partitionLineIndex)
-      lines.updated(partitionLineIndex, lines(partitionLineIndex).replace(previousHostnames, previousHostnames + hostName + ","))
+      lines.updated(partitionLineIndex, lines(partitionLineIndex).replace(s"$hostname,", ""))
     }
   }
 }
