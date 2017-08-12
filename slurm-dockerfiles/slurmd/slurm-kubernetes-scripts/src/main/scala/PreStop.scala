@@ -6,7 +6,7 @@ import play.api.libs.json.{Json, _}
 import scala.io.Source
 import scala.util.{Failure, Success, Try}
 
-object PreDestroy {
+object PreStop {
 
   import scala.concurrent.ExecutionContext.Implicits._
 
