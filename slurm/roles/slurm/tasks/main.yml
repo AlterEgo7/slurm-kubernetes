@@ -12,6 +12,7 @@
   with_items:
     - { src: slurm-config.yaml.j2, dest: /slurm-config.yaml }
     - { src: slurm.yaml.j2, dest: /slurm.yaml }
+    - { src: slurm-config-pvc.yaml.j2, dest: /slurm-config-pvc.yaml }
     - { src: slurm-pvc.yaml.j2, dest: /slurm-pvc.yaml }
 
 - name: Create slurm config map
@@ -26,8 +27,11 @@
 - name: Label MySQL storage node
   command: "kubectl label node {{ groups['slurm-mysql-storage'][0] }} slurmstorage=mysql --overwrite=true"
 
-- name: Create slurm pvc
-  command: kubectl apply -f /tmp/slurm/slurm-pvc.yaml
+- name: Create slurm PersistentVolumeClaims
+  command: "kubectl apply -f /tmp/slurm/{{ item }}"
+  with_items:
+    - slurm-pvc.yaml
+    - slurm-config-pvc.yaml
 
 - name: Create slurm cluster
   command: kubectl apply -f /tmp/slurm/slurm.yaml
