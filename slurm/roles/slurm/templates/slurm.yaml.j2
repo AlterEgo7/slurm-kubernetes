@@ -19,6 +19,20 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
+  name: slurm-mysql
+  labels:
+    app: slurm
+spec:
+  ports:
+    - port: 3306
+  selector:
+    app: slurm
+    tier: mysql
+  clusterIP: None
+---
+apiVersion: v1
+kind: Service
+metadata:
   name: slurm
   labels:
     app: slurm
@@ -33,6 +47,45 @@ spec:
     name: drain
   selector:
    app: slurm
+---
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: slurm-mysql
+  labels:
+    app: slurm
+spec:
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: slurm
+        tier: mysql
+    spec:
+      nodeSelector:
+        slurmstorage: mysql
+      containers:
+      - image: mysql:5.7.19
+        name: mysql
+        env:
+          # $ kubectl create secret generic mysql-pass --from-file=password.txt
+          # make sure password.txt does not have a trailing newline
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-pass
+              key: password.txt
+        ports:
+        - containerPort: 3306
+          name: mysql
+        volumeMounts:
+        - name: local-slurm-mysql
+          mountPath: /var/lib/mysql
+      volumes:
+      - name: local-slurm-mysql
+        hostPath:
+          path: /volumes/mysql-data
 ---
 apiVersion: apps/v1beta1
 kind: StatefulSet

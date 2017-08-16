@@ -17,6 +17,15 @@
 - name: Create slurm config map
   command: kubectl apply -f /tmp/slurm/slurm-config.yaml
 
+- name: Create MySQL password secret
+  shell: |
+    echo -n {{ slurm_mysql_pass }} > password.txt
+    kubectl create secret generic mysql-pass --from-file=password.txt
+    rm password.txt
+
+- name: Label MySQL storage node
+  command: "kubectl label node {{ groups['slurm-mysql-storage'][0] }} slurmstorage=mysql --overwrite=true"
+
 - name: Create slurm pvc
   command: kubectl apply -f /tmp/slurm/slurm-pvc.yaml
 

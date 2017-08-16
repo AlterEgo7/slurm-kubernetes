@@ -6,6 +6,9 @@
 - name: Include glusterfs vars
   include_vars: ../../glusterfs/defaults/main.yml
 
+- name: Delete MySQL password secret
+  command: kubectl delete secret mysql-pass
+
 - name: Delete Slurm StatefulSet
   command: kubectl delete statefulset slurm --ignore-not-found=true
 
