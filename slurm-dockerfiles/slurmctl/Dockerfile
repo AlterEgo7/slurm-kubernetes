@@ -22,6 +22,7 @@ COPY drain_host.sh /drain_host.sh
 COPY liveness.sh /liveness.sh
 
 RUN chmod +x /drain_host.sh
+RUN chmod +x /config-reload.sh
 
 EXPOSE 22
 

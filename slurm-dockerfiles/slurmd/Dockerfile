@@ -14,5 +14,6 @@ COPY --from=builder /slurm-kubernetes-scripts/target/scala-2.12/slurm-kubernetes
 
 COPY liveness.sh /liveness.sh
 COPY preStop.sh /preStop.sh
+COPY preStart.sh /preStart.sh
 
 CMD /usr/bin/supervisord --nodaemon

@@ -7,11 +7,11 @@ object PreStart {
 
   def apply(): Unit = {
 
-    val lines = Source.fromFile("/usr/local/etc/slurm.conf").getLines()
+    val lines = Source.fromFile("/usr/local/etc/slurm.conf").getLines().toVector
 
     if (lines.exists{ l => l.contains(InetAddress.getLocalHost.getCanonicalHostName)}) return
 
-    val newLines = addPartitionName(addNodeName(lines.toVector))
+    val newLines = addPartitionName(addNodeName(lines))
 
     val bw = new BufferedWriter(new FileWriter("/usr/local/etc/slurm.conf"))
 

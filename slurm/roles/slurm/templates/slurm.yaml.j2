@@ -45,6 +45,8 @@ spec:
     name: slurmd
   - port: 22345
     name: drain
+  - port: 22346
+    name: reconfigure
   selector:
    app: slurm
 ---
@@ -105,7 +107,7 @@ spec:
         image: {{ slurm_worker_image }}
         imagePullPolicy: Always
         command: ["/bin/bash"]
-        args: ["-c", "chown slurm:slurm /data; java -jar /hooks.jar preStart > hooks.log 2>&1; /usr/bin/supervisord --nodaemon"]
+        args: ["-c", "chown slurm:slurm /data; bash /preStart.sh; /usr/bin/supervisord --nodaemon"]
         ports:
         - containerPort: 6817
         volumeMounts:

@@ -7,9 +7,9 @@ object PreStop {
 
   def apply(): Unit = {
 
-    val lines = Source.fromFile("/usr/local/etc/slurm.conf").getLines()
+    val lines = Source.fromFile("/usr/local/etc/slurm.conf").getLines().toVector
 
-    val newLines = removePartitionName(removeNodeName(lines.toVector))
+    val newLines = removePartitionName(removeNodeName(lines))
 
     val bw = new BufferedWriter(new FileWriter("/usr/local/etc/slurm.conf"))
 
