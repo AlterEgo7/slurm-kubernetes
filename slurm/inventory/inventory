@@ -1,9 +1,9 @@
 # ## Configure 'ip' variable to bind kubernetes services on a
 # ## different ip than the default iface
-gluster1 ansible_host=192.168.62.101 ansible_user=ubuntu ip=192.168.62.101 flannel_interface=192.168.62.101 flannel_backend_type=host-gw
-gluster2 ansible_host=192.168.62.102 ansible_user=ubuntu ip=192.168.62.102 flannel_interface=192.168.62.102 flannel_backend_type=host-gw
-gluster3 ansible_host=192.168.62.103 ansible_user=ubuntu ip=192.168.62.103 flannel_interface=192.168.62.103 flannel_backend_type=host-gw
-gluster4 ansible_host=192.168.62.104 ansible_user=ubuntu ip=192.168.62.104 flannel_interface=192.168.62.104 flannel_backend_type=host-gw
+gluster1 ansible_host=192.168.62.101 ansible_user=ubuntu ip=192.168.62.101
+gluster2 ansible_host=192.168.62.102 ansible_user=ubuntu ip=192.168.62.102
+gluster3 ansible_host=192.168.62.103 ansible_user=ubuntu ip=192.168.62.103
+gluster4 ansible_host=192.168.62.104 ansible_user=ubuntu ip=192.168.62.104
 # node5 ansible_host=95.54.0.16  # ip=10.3.0.5
 # node6 ansible_host=95.54.0.17  # ip=10.3.0.6
 
@@ -31,3 +31,6 @@ kube-node
 [k8s-cluster:children]
 kube-node
 kube-master
+
+[slurm-mysql-storage]
+gluster3
