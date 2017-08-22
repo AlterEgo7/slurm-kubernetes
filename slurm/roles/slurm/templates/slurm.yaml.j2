@@ -109,7 +109,7 @@ spec:
         command: ["/bin/bash"]
         args: ["-c", "chown slurm:slurm /data; bash /preStart.sh; /usr/bin/supervisord --nodaemon"]
         ports:
-        - containerPort: 6817
+        - containerPort: 6818
         volumeMounts:
         - name: slurm-config-volume
           mountPath: /usr/local/etc
@@ -158,7 +158,7 @@ spec:
     args: ["-c", "chown slurm:slurm /data; cp /var/lib/slurm/default_config/slurm.conf /usr/local/etc/slurm.conf; /usr/bin/supervisord --nodaemon"]
     ports:
     - containerPort: 22
-    - containerPort: 6818
+    - containerPort: 6817
     volumeMounts:
     - name: slurm-config-map
       mountPath: /var/lib/slurm/default_config

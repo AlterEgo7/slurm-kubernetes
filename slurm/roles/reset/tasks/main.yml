@@ -7,13 +7,13 @@
   include_vars: ../../glusterfs/defaults/main.yml
 
 - name: Delete MySQL password secret
-  command: kubectl delete secret mysql-pass
+  command: kubectl delete secret mysql-pass --ignore-not-found=true
 
-- name: Delete Slurm StatefulSet
-  command: kubectl delete statefulset slurm --ignore-not-found=true
+- name: Delete SlurmStatefulSet
+  command: kubectl delete statefulset slurm --ignore-not-found=true --cascade=false
 
-- name: Delete Slurm master
-  command: kubectl delete pod slurm-master --ignore-not-found=true
+- name: Delete all pods
+  command: kubectl delete pod --all --grace-period=0 --force
 
 - name: Delete other Slurm resources
   command: kubectl delete -f /tmp/slurm --ignore-not-found=true
@@ -30,7 +30,7 @@
 
 - name: Wait for GlusterFS bricks to be deleted
   pause:
-    seconds: 10    
+    seconds: 20    
 
 - name: Delete GlusterFS devices
   shell: |
