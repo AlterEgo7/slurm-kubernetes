@@ -9,6 +9,9 @@ kube_manifest_dir: "{{ kube_config_dir }}/manifests"
 system_namespace: kube-system
 kube_apiserver_node_port_range: "5000-50000"
 
+# kubelet_custom_flags:
+# apiserver_custom_flags:
+
 # Override image repos to point to local private registry
 # for speed purposes. Acts as a local cache for images
 # that are uploaded in the Docker registry
