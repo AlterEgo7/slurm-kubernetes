@@ -161,7 +161,7 @@ items:
       #
       #
 {% for i in range(0, slurm_workers) %}
-      NodeName=slurm-{{i}}.slurm.default.svc.cluster.local CPUs=2 SocketsPerBoard=1 CoresPerSocket=2 ThreadsPerCore=1 RealMemory=2000 State=UNKNOWN
+      NodeName=slurm-{{i}}.slurm.default.svc.cluster.local Weight={{i}} CPUs=2 SocketsPerBoard=1 CoresPerSocket=2 ThreadsPerCore=1 RealMemory=2000 State=UNKNOWN
 {% endfor %}
       PartitionName=debug Nodes={% for i in range(0, slurm_workers) -%}slurm-{{i}}.slurm.default.svc.cluster.local,{% endfor %} Default=YES MaxTime=INFINITE State=UP
 

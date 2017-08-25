@@ -30,9 +30,12 @@ object PreStart {
 
     val (filePrefix, fileSuffix) = lines.splitAt(lastNodeNameIndex)
     val hostname = InetAddress.getLocalHost.getCanonicalHostName
+    val ordinalRegex = """\D*(\d+).*""".r
+
+    val ordinalRegex(weight) = hostname
 
     filePrefix ++
-      List(s"NodeName=$hostname CPUs=2 SocketsPerBoard=1 CoresPerSocket=2 ThreadsPerCore=1 RealMemory=2000 State=UNKNOWN") ++
+      List(s"NodeName=$hostname Weight=$weight CPUs=2 SocketsPerBoard=1 CoresPerSocket=2 ThreadsPerCore=1 RealMemory=2000 State=UNKNOWN") ++
       fileSuffix
   }
 
