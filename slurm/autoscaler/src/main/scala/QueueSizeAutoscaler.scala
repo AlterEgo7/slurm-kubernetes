@@ -1,7 +1,9 @@
 import java.net.Socket
+import java.time.LocalDateTime
 
 import http_client.HttpClient
 import play.api.libs.json.{Json, _}
+import scopt.OptionParser
 
 import scala.io.Source
 import scala.util.{Failure, Success, Try}
@@ -11,53 +13,66 @@ object QueueSizeAutoscaler {
   def main(args: Array[String]): Unit = {
     import scala.concurrent.ExecutionContext.Implicits._
 
-    //TODO: Options parser for --min --max
-
-    val namespace: String = Try({
-      Source.fromFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace").mkString
-    }).getOrElse("default")
-
-    val queueSocket = new Socket("gluster1", 23796)
-    val slurmInfo = Json.parse(Source.fromInputStream(queueSocket.getInputStream).mkString)
-
-    val queueSize = (slurmInfo \ "queue_size").get.as[Int]
-    val allocNodes = (slurmInfo \ "alloc_nodes").get.as[Int]
-
-
-    val client = HttpClient()
-
-    val responseFuture = client.url(s"http://gluster1:8001/apis/apps/v1beta1/namespaces/$namespace/statefulsets/slurm")
-      .addQueryStringParameters("export" -> "true")
-      .get()
-
-    val replicasFuture = responseFuture map { response =>
-      if (response.status == 200) {
-        val jsonBody = Json.parse(response.body)
-        val jsonTransformer = (__ \ "spec" \ "replicas").json.pick
-        Success(Json.stringify(jsonBody.transform(jsonTransformer).asInstanceOf[JsSuccess[JsValue]].value).trim.toInt)
-      } else {
-        Failure(new Exception("Resource not found"))
-      }
+    val parser = new OptionParser[Config]("slurm_autoscaler") {
+      head("slurm_autoscaler", "1.0")
+      opt[Int]("min") required() action { (min, config) => config.copy(min = min) }
+      opt[Int]("max") required() action { (max, config) => config.copy(max = max) }
+      opt[Double]("duration") required() action { (period, config) => config.copy(period = period) }
     }
 
-    replicasFuture map {
-      case Success(replicas) =>
-        val newReplicas = if (queueSize > 0) math.min(5, allocNodes + queueSize) else allocNodes + 1
-        if (newReplicas != replicas) {
-          println(s"Scaling now to $newReplicas")
+    parser.parse(args, Config()) match {
+      case Some(config) =>
+        val namespace: String = Try({
+          Source.fromFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace").mkString
+        }).getOrElse("default")
+
+        val client = HttpClient()
+
+        while(true) {
+          val queueSocket = new Socket("gluster1", 23796)
+          val slurmInfo = Json.parse(Source.fromInputStream(queueSocket.getInputStream).mkString)
+
+          val queueSize = (slurmInfo \ "queue_size").get.as[Int]
+          val allocNodes = (slurmInfo \ "alloc_nodes").get.as[Int]
+
+          val responseFuture = client.url(s"http://gluster1:8001/apis/apps/v1beta1/namespaces/$namespace/statefulsets/slurm")
+            .addQueryStringParameters("export" -> "true")
+            .get()
+
+          val replicasFuture = responseFuture map { response =>
+            if (response.status == 200) {
+              val jsonBody = Json.parse(response.body)
+              val jsonTransformer = (__ \ "spec" \ "replicas").json.pick
+              Success(Json.stringify(jsonBody.transform(jsonTransformer).asInstanceOf[JsSuccess[JsValue]].value).trim.toInt)
+            } else {
+              Failure(new Exception("Resource not found"))
+            }
+          }
+
+          replicasFuture map {
+            case Success(replicas) =>
+              val newReplicas = if (queueSize > 0) math.min(config.max, allocNodes + queueSize) else math.max(config.min, allocNodes + 1)
+              if (newReplicas != replicas) {
+                println(s"${LocalDateTime.now().toString}: Scaling now to $newReplicas")
+              }
+              val newReplicaBody = Json.obj("spec" -> Json.obj("replicas" -> newReplicas))
+
+              client.url(s"http://gluster1:8001/apis/apps/v1beta1/namespaces/$namespace/statefulsets/slurm")
+                .addHttpHeaders("Content-Type" -> "application/merge-patch+json")
+                .patch(newReplicaBody.toString())
+
+            case Failure(ex) =>
+              Failure(ex)
+          }
+          Thread.sleep((config.period * 1000).toLong)
         }
-        val newReplicaBody = Json.obj("spec" -> Json.obj("replicas" -> newReplicas))
 
-        client.url(s"http://gluster1:8001/apis/apps/v1beta1/namespaces/$namespace/statefulsets/slurm")
-          .addHttpHeaders("Content-Type" -> "application/merge-patch+json")
-          .patch(newReplicaBody.toString())
-          .andThen{ case _ => client.close() }
-          .andThen{ case _ => HttpClient.terminate() }
 
-      case Failure(ex) =>
-        client.close()
-        HttpClient.terminate()
-        Failure(ex)
+      case None =>
     }
+
   }
+
+  case class Config(min: Int = 1, max: Int = 3, period: Double = 60) {}
+
 }
