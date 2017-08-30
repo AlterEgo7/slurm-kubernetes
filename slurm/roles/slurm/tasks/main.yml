@@ -14,6 +14,7 @@
     - { src: slurm.yaml.j2, dest: /slurm.yaml }
     - { src: slurm-config-pvc.yaml.j2, dest: /slurm-config-pvc.yaml }
     - { src: slurm-pvc.yaml.j2, dest: /slurm-pvc.yaml }
+    - { src: slurm-autoscaler.yaml.j2, dest: /slurm-autoscaler.yaml }
 
 - name: Create slurm config map
   command: kubectl apply -f /tmp/slurm/slurm-config.yaml
@@ -35,3 +36,6 @@
 
 - name: Create slurm cluster
   command: kubectl apply -f /tmp/slurm/slurm.yaml
+
+- name: Create slurm autoscaler
+  command: kubectl apply -f /tmp/slurm/slurm-autoscaler.yaml

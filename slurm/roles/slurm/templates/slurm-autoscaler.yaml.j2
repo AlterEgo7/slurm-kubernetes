@@ -1,0 +1,24 @@
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: slurm-autoscaler
+  labels:
+    app: slurm
+spec:
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: slurm
+        tier: autoscaler
+    spec:
+      containers:
+      - name: autoscaler
+        image: 192.168.62.1:5000/autoscaler:0.1
+        imagePullPolicy: Always
+        args: ["--min", "{{ autoscaler_config.min_pods }}", "--max", "{{ autoscaler_config.max_pods }}", "--period", "{{ autoscaler_config.period }}"]
+      - name: kubeapi-proxy
+        image: 192.168.62.1:5000/hyperkube:{{ kube_version }}_coreos.0
+        command: ["kubectl"]
+        args: ["proxy", "-p", "8001"]

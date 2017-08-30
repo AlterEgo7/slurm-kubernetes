@@ -22,6 +22,10 @@ flannel_image_repo: "192.168.62.1:5000/flannel"
 hyperkube_image_repo: "192.168.62.1:5000/hyperkube"
 heapster_grafana_image: "192.168.62.1:5000/heapster-grafana-amd64"
 
+slurm_worker_image: 192.168.62.1:5000/slurmd:17.02.6
+slurm_master_image: 192.168.62.1:5000/slurmctl:17.02.6
+slurm_autoscaler_image: 192.168.62.1:5000/autoscaler:0.1
+
 docker_version: '1.12'
 
 # Logging directory (sysvinit systems)

@@ -6,3 +6,9 @@ slurm_mysql_pass: slurm
 
 slurm_worker_image: openmole/slurmd:17.02.6
 slurm_master_image: openmole/slurmctl:17.02.6
+slurm_autoscaler_image: openmole/slurm-autoscaler:0.1
+
+autoscaler_config:
+  min_pods: 1
+  max_pods: 5
+  period: 60

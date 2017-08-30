@@ -47,6 +47,8 @@ spec:
     name: drain
   - port: 22346
     name: reconfigure
+  - port: 22347
+    name: queue-size
   selector:
    app: slurm
 ---
@@ -166,13 +168,13 @@ spec:
       mountPath: /usr/local/etc
     - name: gluster-vol1
       mountPath: /data
-    # livenessProbe:
-    #   exec:
-    #     command:
-    #     - /bin/bash
-    #     - /liveness.sh
-    #   initialDelaySeconds: 5
-    #   periodSeconds: 5
+    livenessProbe:
+      exec:
+        command:
+        - /bin/bash
+        - /liveness.sh
+      initialDelaySeconds: 5
+      periodSeconds: 5
   volumes:
   - name: slurm-config-map
     configMap:
