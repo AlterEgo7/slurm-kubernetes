@@ -32,7 +32,7 @@ object QueueSizeAutoscaler {
         while(true) {
           breakable {
             val queueSocket = try {
-              new Socket("slurm-master.slurm", 22347)
+              new Socket("slurm-master-0.slurm", 22347)
             } catch {
               case _: Exception => break
             }

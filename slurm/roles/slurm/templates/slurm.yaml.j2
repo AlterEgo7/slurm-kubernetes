@@ -141,47 +141,49 @@ spec:
         persistentVolumeClaim:
           claimName: gluster1
 ---
-apiVersion: v1
-kind: Pod
+apiVersion: apps/v1beta1
+kind: StatefulSet
 metadata:
   name: slurm-master
-  labels:
-    app: slurm
-    role: slurm-master
 spec:
-  hostname: slurm-master
-  subdomain: slurm
-  restartPolicy: Always
-  containers:
-  - name: slurmctl
-    image: {{ slurm_master_image }}
-    imagePullPolicy: Always
-    command: ["/bin/bash"]
-    args: ["-c", "chown slurm:slurm /data; cp /var/lib/slurm/default_config/slurm.conf /usr/local/etc/slurm.conf; /usr/bin/supervisord --nodaemon"]
-    ports:
-    - containerPort: 22
-    - containerPort: 6817
-    volumeMounts:
-    - name: slurm-config-map
-      mountPath: /var/lib/slurm/default_config
-    - name: slurm-config-volume
-      mountPath: /usr/local/etc
-    - name: gluster-vol1
-      mountPath: /data
-    livenessProbe:
-      exec:
-        command:
-        - /bin/bash
-        - /liveness.sh
-      initialDelaySeconds: 5
-      periodSeconds: 5
-  volumes:
-  - name: slurm-config-map
-    configMap:
-      name: slurm-config
-  - name: slurm-config-volume
-    persistentVolumeClaim:
-      claimName: slurm-config
-  - name: gluster-vol1
-    persistentVolumeClaim:
-      claimName: gluster1
+  serviceName: slurm
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: slurm
+        role: slurm-master
+    spec:
+      containers:
+      - name: slurmctl
+        image: {{ slurm_master_image }}
+        imagePullPolicy: Always
+        command: ["/bin/bash"]
+        args: ["-c", "chown slurm:slurm /data; cp /var/lib/slurm/default_config/slurm.conf /usr/local/etc/slurm.conf; /usr/bin/supervisord --nodaemon"]
+        ports:
+        - containerPort: 22
+        - containerPort: 6817
+        volumeMounts:
+        - name: slurm-config-map
+          mountPath: /var/lib/slurm/default_config
+        - name: slurm-config-volume
+          mountPath: /usr/local/etc
+        - name: gluster-vol1
+          mountPath: /data
+        livenessProbe:
+          exec:
+            command:
+            - /bin/bash
+            - /liveness.sh
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: slurm-config-map
+        configMap:
+          name: slurm-config
+      - name: slurm-config-volume
+        persistentVolumeClaim:
+          claimName: slurm-config
+      - name: gluster-vol1
+        persistentVolumeClaim:
+          claimName: gluster1
