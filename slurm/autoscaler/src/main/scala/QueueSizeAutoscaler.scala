@@ -1,5 +1,6 @@
-import java.net.Socket
+import java.net.{Socket, UnknownHostException}
 import java.time.LocalDateTime
+import util.control.Breaks._
 
 import http_client.HttpClient
 import play.api.libs.json.{Json, _}
@@ -14,10 +15,10 @@ object QueueSizeAutoscaler {
     import scala.concurrent.ExecutionContext.Implicits._
 
     val parser = new OptionParser[Config]("slurm_autoscaler") {
-      head("slurm_autoscaler", "1.0")
+      head("slurm_autoscaler", "0.1")
       opt[Int]("min") required() action { (min, config) => config.copy(min = min) }
       opt[Int]("max") required() action { (max, config) => config.copy(max = max) }
-      opt[Double]("duration") required() action { (period, config) => config.copy(period = period) }
+      opt[Double]("period") required() action { (period, config) => config.copy(period = period) }
     }
 
     parser.parse(args, Config()) match {
@@ -29,40 +30,54 @@ object QueueSizeAutoscaler {
         val client = HttpClient()
 
         while(true) {
-          val queueSocket = new Socket("gluster1", 23796)
-          val slurmInfo = Json.parse(Source.fromInputStream(queueSocket.getInputStream).mkString)
-
-          val queueSize = (slurmInfo \ "queue_size").get.as[Int]
-          val allocNodes = (slurmInfo \ "alloc_nodes").get.as[Int]
-
-          val responseFuture = client.url(s"http://gluster1:8001/apis/apps/v1beta1/namespaces/$namespace/statefulsets/slurm")
-            .addQueryStringParameters("export" -> "true")
-            .get()
-
-          val replicasFuture = responseFuture map { response =>
-            if (response.status == 200) {
-              val jsonBody = Json.parse(response.body)
-              val jsonTransformer = (__ \ "spec" \ "replicas").json.pick
-              Success(Json.stringify(jsonBody.transform(jsonTransformer).asInstanceOf[JsSuccess[JsValue]].value).trim.toInt)
-            } else {
-              Failure(new Exception("Resource not found"))
+          breakable {
+            val queueSocket = try {
+              new Socket("slurm-master.slurm", 22347)
+            } catch {
+              case _: Exception => break
             }
-          }
 
-          replicasFuture map {
-            case Success(replicas) =>
-              val newReplicas = if (queueSize > 0) math.min(config.max, allocNodes + queueSize) else math.max(config.min, allocNodes + 1)
-              if (newReplicas != replicas) {
-                println(s"${LocalDateTime.now().toString}: Scaling now to $newReplicas")
+            val slurmInfo = Json.parse(Source.fromInputStream(queueSocket.getInputStream).mkString)
+
+            val queueSize = (slurmInfo \ "queue_size").get.as[Int]
+            val allocNodes = (slurmInfo \ "alloc_nodes").get.as[Int]
+
+            val responseFuture = client.url(s"http://localhost:8001/apis/apps/v1beta1/namespaces/$namespace/statefulsets/slurm")
+              .addQueryStringParameters("export" -> "true")
+              .get()
+
+            val replicasFuture = responseFuture map { response =>
+              if (response.status == 200) {
+                val jsonBody = Json.parse(response.body)
+                val jsonTransformer = (__ \ "spec" \ "replicas").json.pick
+                Success(Json.stringify(jsonBody.transform(jsonTransformer).asInstanceOf[JsSuccess[JsValue]].value).trim.toInt)
+              } else {
+                Failure(new Exception("Resource not found"))
               }
-              val newReplicaBody = Json.obj("spec" -> Json.obj("replicas" -> newReplicas))
+            }
 
-              client.url(s"http://gluster1:8001/apis/apps/v1beta1/namespaces/$namespace/statefulsets/slurm")
-                .addHttpHeaders("Content-Type" -> "application/merge-patch+json")
-                .patch(newReplicaBody.toString())
+            replicasFuture map {
+              case Success(replicas) =>
+                val newReplicas = if (queueSize > 0) math.min(config.max, allocNodes + queueSize) else math.max(config.min, allocNodes + 1)
+                if (newReplicas != replicas) {
+                  println(s"${LocalDateTime.now().toString}: Scaling now to $newReplicas")
+                }
+                val newReplicaBody = Json.obj("spec" -> Json.obj("replicas" -> newReplicas))
 
-            case Failure(ex) =>
-              Failure(ex)
+                client.url(s"http://localhost:8001/apis/apps/v1beta1/namespaces/$namespace/statefulsets/slurm")
+                  .addHttpHeaders("Content-Type" -> "application/merge-patch+json")
+                  .patch(newReplicaBody.toString())
+
+              case Failure(ex) =>
+                Failure(ex)
+            }
+
+            replicasFuture onComplete {
+              case Success(_) =>
+              case Failure(ex) =>
+                System.err.println(s"${LocalDateTime.now().toString}: ERROR (see below)")
+                ex.printStackTrace()
+            }
           }
           Thread.sleep((config.period * 1000).toLong)
         }
