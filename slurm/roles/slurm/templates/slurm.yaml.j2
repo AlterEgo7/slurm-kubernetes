@@ -163,6 +163,9 @@ spec:
         ports:
         - containerPort: 22
         - containerPort: 6817
+        - containerPort: 22345
+        - containerPort: 22346
+        - containerPort: 22347
         volumeMounts:
         - name: slurm-config-map
           mountPath: /var/lib/slurm/default_config
