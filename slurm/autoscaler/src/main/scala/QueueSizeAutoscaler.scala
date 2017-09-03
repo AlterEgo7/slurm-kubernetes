@@ -58,7 +58,7 @@ object QueueSizeAutoscaler {
 
             replicasFuture map {
               case Success(replicas) =>
-                val newReplicas = if (queueSize > 0) math.min(config.max, allocNodes + queueSize) else math.max(config.min, allocNodes + 1)
+                val newReplicas = if ((queueSize + allocNodes) > 0) math.min(config.max, allocNodes + queueSize) else math.max(config.min, allocNodes + 1)
                 if (newReplicas != replicas) {
                   println(s"${LocalDateTime.now().toString}: Scaling now to $newReplicas")
                 }
