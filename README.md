@@ -11,3 +11,8 @@ The purpose of this repo is to hold ansible files for automating cluster creatio
 * All 3 clusters are based on the official Vagrant Ubuntu 16.04 image for VirtualBox, namely 'ubuntu/xenial64'.
 
 * At the moment, in the Vagrantfiles the SSH key is passed in the authorized_keys verbatim. For Ansible to work, passwordless SSH login with the ubuntu user is needed.
+
+* You need to clone the *kubernetes-cargo* submodule along with this repo:
+  - For an initial clone: `git clone -r https://github.com/AlterEgo7/cluster-management.git`
+  - For an existing clone: `git submodule init --update`
+
