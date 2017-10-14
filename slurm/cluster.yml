@@ -1,7 +1,7 @@
 ---
 
 - name: Install Kubernetes
-  include: ../kubernetes-kargo/cluster.yml
+  include: ../kubespray/cluster.yml
   tags:
     - kubernetes
 

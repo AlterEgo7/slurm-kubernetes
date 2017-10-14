@@ -7,7 +7,7 @@
 
 - name: Download gluster-kubernetes
   unarchive:
-    src: "https://github.com/gluster/gluster-kubernetes/archive/{{ gluster_kubernetes_version }}.tar.gz"
+    src: "https://github.com/gluster/gluster-kubernetes/archive/v{{ gluster_kubernetes_version }}.tar.gz"
     dest: "{{ gluster_kubernetes_workdir }}"
     remote_src: yes
 
@@ -28,7 +28,7 @@
 - name: Add GlusterFS topology file
   template:
     src: templates/topology.json.j2
-    dest: "{{ gluster_kubernetes_workdir }}/gluster-kubernetes-1.1/deploy/topology.json"
+    dest: "{{ gluster_kubernetes_workdir }}/gluster-kubernetes-{{ gluster_kubernetes_version }}/deploy/topology.json"
 
 - name: Add gluster namespace manifest
   template:
@@ -37,7 +37,7 @@
 
 - name: Create Kubernetes namespace
   command: kubectl apply -f /tmp/gluster_namespace.json
-
+  
 - name: Label glusterfs nodes
   command: kubectl label node {{ item }} storagenode=glusterfs --overwrite
   with_items:
@@ -46,7 +46,7 @@
 - name: Create glusterfs resources
   command: kubectl --namespace={{ gluster_kubernetes_namespace }} apply -f {{ item }}
   args:
-    chdir: "{{ gluster_kubernetes_workdir }}/gluster-kubernetes-1.1/deploy/kube-templates"
+    chdir: "{{ gluster_kubernetes_workdir }}/gluster-kubernetes-{{ gluster_kubernetes_version }}/deploy/kube-templates"
   with_items:
     - "heketi-service-account.yaml"
     - "glusterfs-daemonset.yaml"
@@ -61,7 +61,7 @@
 - name: Deploy heketi server
   command: kubectl --namespace={{ gluster_kubernetes_namespace }} apply -f deploy-heketi-deployment.yaml
   args:
-    chdir: "{{ gluster_kubernetes_workdir }}/gluster-kubernetes-1.1/deploy/kube-templates"
+    chdir: "{{ gluster_kubernetes_workdir }}/gluster-kubernetes-{{ gluster_kubernetes_version }}/deploy/kube-templates"
 
 - name: Extract heketi endpoint IP
   shell: kubectl --namespace={{ gluster_kubernetes_namespace }} get service | grep deploy-heketi | awk '{ print $2 }'
@@ -80,7 +80,7 @@
 - name: Apply glusterfs topology
   command: heketi-cli topology load --json=topology.json
   args:
-    chdir: "{{ gluster_kubernetes_workdir }}/gluster-kubernetes-1.1/deploy"
+    chdir: "{{ gluster_kubernetes_workdir }}/gluster-kubernetes-{{ gluster_kubernetes_version }}/deploy"
   environment:
     HEKETI_CLI_SERVER: "{{ heketi_endpoint }}"
 

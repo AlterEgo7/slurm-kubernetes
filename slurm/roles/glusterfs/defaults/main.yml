@@ -1,5 +1,5 @@
-gluster_kubernetes_version: v1.1
+gluster_kubernetes_version: 1.2.0
 gluster_kubernetes_workdir: /tmp/glusterfs
 gluster_kubernetes_namespace: kube-system
 
-heketi_version: v4.0.0
+heketi_version: v5.0.0

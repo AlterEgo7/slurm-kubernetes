@@ -29,8 +29,8 @@ gluster4
 kube-node
 
 [k8s-cluster:children]
-kube-node
 kube-master
+kube-node
 
 [slurm-mysql-storage]
 gluster3
