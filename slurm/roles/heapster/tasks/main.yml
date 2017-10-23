@@ -14,6 +14,3 @@
 
 - name: Create resources
   command: kubectl apply -f {{ heapster_workdir }}
-
-- name: Create Kubernetes Dashboard
-  command: kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/master/src/deploy/recommended/kubernetes-dashboard.yaml

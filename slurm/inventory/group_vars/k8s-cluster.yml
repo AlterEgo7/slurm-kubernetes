@@ -8,6 +8,7 @@ kube_script_dir: "{{ bin_dir }}/kubernetes-scripts"
 kube_manifest_dir: "{{ kube_config_dir }}/manifests"
 system_namespace: kube-system
 kube_apiserver_node_port_range: "5000-50000"
+gluster_kubernetes_namespace: default
 
 # kubelet_custom_flags:
 # apiserver_custom_flags:
@@ -30,7 +31,7 @@ slurm_master_image: openmole/slurmctl:17.02.6
 slurm_autoscaler_image: openmole/autoscaler:0.1
 
 
-docker_version: '1.12'
+# docker_version: '1.12'
 
 # Logging directory (sysvinit systems)
 kube_log_dir: "/var/log/kubernetes"
@@ -47,7 +48,7 @@ kube_users_dir: "{{ kube_config_dir }}/users"
 kube_api_anonymous_auth: false
 
 ## Change this to use another Kubernetes version, e.g. a current beta release
-kube_version: v1.7.5
+kube_version: v1.8.0
 
 # Where the binaries will be downloaded.
 # Note: ensure that you've enough disk space (about 1G)
