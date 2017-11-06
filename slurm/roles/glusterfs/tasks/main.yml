@@ -129,44 +129,6 @@
 - name: Apply glusterfs topology
   shell: kubectl exec -it {{ deploy_heketi_pod_id }} -- heketi-cli topology load --json=/etc/heketi/topology.json
 
-- name: Setup storage
-  shell: kubectl exec -it {{ deploy_heketi_pod_id }} -- heketi-cli setup-openshift-heketi-storage --listfile=/tmp/heketi-storage.json
-
-- name: Create heketi-storage.json
-  shell: kubectl exec -it {{ deploy_heketi_pod_id }} -- cat /tmp/heketi-storage.json | kubectl apply -f -
-
-- name: Wait for storage job to finish
-  shell: kubectl --namespace={{ gluster_kubernetes_namespace }} get jobs --no-headers | grep heketi-storage-copy-job | awk '{ print $3 }'
-  register: storage_done
-  until: storage_done.stdout == "1"
-  retries: 60
-  delay: 1
-
-- name: Label service
-  command: kubectl label --overwrite svc heketi-storage-endpoints glusterfs=heketi-storage-endpoints heketi=storage-endpoints
-
-- name: Delete all "deploy" resources
-  shell: "kubectl delete all,service,jobs,deployment,secret --selector=deploy-heketi"
-
-- name: Create heketi deployment
-  shell: sed -e 's|${HEKETI_EXECUTOR}|kubernetes|' -e 's|${HEKETI_ADMIN_KEY}||' -e 's|${HEKETI_USER_KEY}||' heketi-deployment.yaml | kubectl apply -f -
-  args:
-    chdir: "{{ gluster_kubernetes_workdir }}/gluster-kubernetes-{{ gluster_kubernetes_version }}/deploy/kube-templates"
-
-- name: Wait for heketi to come online
-  shell: kubectl --namespace={{ gluster_kubernetes_namespace }} get deployment --no-headers heketi | awk '{ print $5 }'
-  register: heketi_ready
-  until: heketi_ready.stdout == "1"
-  retries: 60
-  delay: 1
-
-- name: Extract heketi endpoint IP
-  shell: kubectl --namespace={{ gluster_kubernetes_namespace }} get service | grep -e '^heketi ' | awk '{ print $3 }'
-  register: heketi_ip
-
-- set_fact:
-    heketi_endpoint: "http://{{ heketi_ip.stdout }}:8080"
-
 - name: Add gluster storage class manifest
   template:
     src: templates/gluster-storage.yaml.j2
