@@ -129,6 +129,13 @@
 - name: Apply glusterfs topology
   shell: kubectl exec -it {{ deploy_heketi_pod_id }} -- heketi-cli topology load --json=/etc/heketi/topology.json
 
+- name: Extract heketi endpoint IP
+  shell: kubectl --namespace={{ gluster_kubernetes_namespace }} get service | grep -e '^heketi ' | awk '{ print $3 }'
+  register: heketi_ip
+
+- set_fact:
+   heketi_endpoint: "http://{{ heketi_ip.stdout }}:8080"
+
 - name: Add gluster storage class manifest
   template:
     src: templates/gluster-storage.yaml.j2
