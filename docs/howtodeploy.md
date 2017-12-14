@@ -68,10 +68,10 @@ Edit `slurm/inventory/inventory` and replace:
 ### GlusterFS
 
 ```bash
-kubectl -n kube-system
+#kubectl -n kube-system
 kubectl -n kube-system get service
 export HEKETI_CLI_SERVER=http://10.233.38.197:8080
-heketi-cli topology load --json
+#heketi-cli topology load --json
 heketi-cli topology load --json=/tmp/glusterfs/gluster-kubernetes-1.1/deploy/topology.json
 ```
 
